@@ -1,33 +1,53 @@
 name: "Dependabot auto-merge"
 
 # ===========================================================================
-#  Aprueba y fusiona solas las actualizaciones de parche y menores que abre
-#  Dependabot. Las versiones mayores se quedan esperando revision manual.
+#  Fusiona sola cualquier actualizacion de Dependabot que no sea un salto de
+#  version mayor, PERO solo despues de que el CI pase.
 #
-#  DOS CONDICIONES para que esto funcione de verdad, y ninguna vive en este
-#  archivo (las dos son ajustes del repositorio):
-#    1. "Allow auto-merge" activado en Settings > General.
-#       Sin eso, `gh pr merge --auto` falla con "Auto-merge is not allowed".
-#    2. "Allow GitHub Actions to create and approve pull requests" activado
-#       en Settings > Actions > General.
-#       Sin eso, `gh pr review --approve` se rechaza.
+#  POR QUE DOS DISPARADORES: mientras este repositorio sea privado, GitHub
+#  Free no ofrece el auto-merge diferido ("Auto merge is not allowed for this
+#  repository"), asi que no se puede dejar un merge en cola esperando a los
+#  checks. La alternativa es esperar nosotros:
 #
-#  OJO: este repositorio no tiene todavia un workflow de tests, asi que el
-#  auto-merge no espera ninguna comprobacion antes de fusionar. Anadir un
-#  workflow de CI es lo que le pondria un freno real.
+#    1. pull_request  -> dependabot/fetch-metadata dice el tipo de salto.
+#                        Si no es mayor, se aprueba y se marca con la
+#                        etiqueta "automerge". No se fusiona nada todavia:
+#                        el CI acaba de empezar.
+#    2. workflow_run  -> cuando CI termina en success, se busca el pull
+#                        request de ese commit y, si lleva la etiqueta, se
+#                        fusiona. Aqui ya hay garantia de que las pruebas
+#                        pasaron.
+#
+#  La etiqueta es lo que comunica los dos pasos. fetch-metadata solo funciona
+#  en el contexto de un evento pull_request, asi que la decision hay que
+#  tomarla en el paso 1 y dejarla escrita en algun sitio que el paso 2 pueda
+#  leer.
+#
+#  Si algun dia el repositorio pasa a publico, esto se puede simplificar al
+#  patron corriente de `gh pr merge --auto` en un solo paso.
+#
+#  REQUISITO (ajuste del repositorio, no de este archivo):
+#    Settings > Actions > General > "Allow GitHub Actions to create and
+#    approve pull requests". Sin eso, `gh pr review --approve` se rechaza.
 # ===========================================================================
 
 on:
   pull_request:
+    branches: ["main"]
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
 
 permissions:
   contents: write
   pull-requests: write
 
 jobs:
-  auto-merge:
-    # Solo actua sobre pull requests que haya abierto Dependabot.
-    if: github.event.pull_request.user.login == 'dependabot[bot]'
+  # --- Paso 1: decidir y etiquetar ----------------------------------------
+  marcar:
+    # user.login es quien ABRIO el PR; github.actor es quien disparo el
+    # evento, y basta con que alguien lo reabra para que deje de coincidir.
+    if: github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
       - name: Leer metadatos del PR de Dependabot
@@ -36,15 +56,59 @@ jobs:
         with:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
 
-      - name: Auto-aprobar y activar auto-merge (squash)
-        # Todo menos los "major". Las actions se fusionan siempre: son
-        # nuestras y sus versiones mayores casi nunca rompen nada.
+      - name: Aprobar y marcar como fusionable
+        # Todo menos los saltos mayores. Un salto mayor de stockfish cambia
+        # el motor que se distribuye dentro de la extension: eso se mira a
+        # mano.
         if: |
           steps.metadata.outputs.update-type != 'version-update:semver-major' ||
           steps.metadata.outputs.package-ecosystem == 'github_actions'
         run: |
           gh pr review --approve "$PR_URL"
-          gh pr merge --squash --auto "$PR_URL"
+          gh pr edit "$PR_URL" --add-label automerge
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # --- Paso 2: fusionar cuando el CI haya pasado --------------------------
+  fusionar:
+    if: >-
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Buscar el PR de este commit y fusionarlo si procede
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+
+          NUM=$(gh api "repos/${REPO}/commits/${SHA}/pulls" --jq '.[0].number // empty')
+          if [ -z "$NUM" ]; then
+            echo "Ningun pull request asociado a ${SHA}; nada que hacer."
+            exit 0
+          fi
+
+          DATOS=$(gh pr view "$NUM" --repo "$REPO" --json author,labels,state)
+          AUTOR=$(echo "$DATOS" | jq -r '.author.login')
+          ESTADO=$(echo "$DATOS" | jq -r '.state')
+          TIENE=$(echo "$DATOS" | jq -r '[.labels[].name] | index("automerge") // empty')
+
+          if [ "$ESTADO" != "OPEN" ]; then
+            echo "PR #${NUM} ya no esta abierto (${ESTADO})."
+            exit 0
+          fi
+          if [ "$AUTOR" != "dependabot[bot]" ]; then
+            echo "PR #${NUM} no es de Dependabot (${AUTOR})."
+            exit 0
+          fi
+          if [ -z "$TIENE" ]; then
+            echo "PR #${NUM} no lleva la etiqueta automerge: salto mayor o sin aprobar."
+            exit 0
+          fi
+
+          echo "Fusionando PR #${NUM} (CI en verde)."
+          gh pr merge "$NUM" --repo "$REPO" --squash --delete-branch
