@@ -1,4 +1,4 @@
 # Dependencias del experimento. Todo CPU: no hace falta GPU.
 numpy>=1.26
 scikit-learn>=1.9.0
-matplotlib>=3.8
+matplotlib>=3.11.1
