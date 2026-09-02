@@ -1,0 +1,17 @@
+{
+  "solo_anyo": {
+    "exactitud": 0.9974424552429667,
+    "auc": 0.9981780096878565
+  },
+  "franja_solapada": {
+    "n": 1005,
+    "phishing": 31,
+    "no_phishing": 974,
+    "exactitud": 0.9830845771144279,
+    "auc": 1.0
+  },
+  "epoca_en_texto": {
+    "exactitud": 0.8745441283734501,
+    "auc": 0.9426725025746654
+  }
+}

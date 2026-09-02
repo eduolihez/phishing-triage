@@ -1,0 +1,92 @@
+{
+  "corpus": {
+    "total": 7822,
+    "phishing": 4572,
+    "no_phishing": 3250
+  },
+  "prueba": {
+    "n": 2347,
+    "errores_ensemble": 43,
+    "tasa_error": 0.018321261184490838,
+    "exactitud_ensemble": 0.9816787388155092,
+    "auc_ensemble": 0.998694774613142
+  },
+  "vistas": [
+    {
+      "vista": "remitente",
+      "exactitud": 0.9386450788240307,
+      "auc": 0.9847331240188383,
+      "precision": 0.9665653495440729,
+      "cobertura": 0.9271137026239067,
+      "f1": 0.9464285714285714
+    },
+    {
+      "vista": "urls",
+      "exactitud": 0.9437579889220281,
+      "auc": 0.9857142857142857,
+      "precision": 0.9791344667697064,
+      "cobertura": 0.923469387755102,
+      "f1": 0.9504876219054764
+    },
+    {
+      "vista": "estructura",
+      "exactitud": 0.9514273540690242,
+      "auc": 0.9803020109142558,
+      "precision": 0.9557971014492753,
+      "cobertura": 0.9613702623906706,
+      "f1": 0.9585755813953488
+    },
+    {
+      "vista": "texto",
+      "exactitud": 0.9816787388155092,
+      "auc": 0.997966659191149,
+      "precision": 0.9984996249062266,
+      "cobertura": 0.9701166180758017,
+      "f1": 0.9841035120147874
+    }
+  ],
+  "senales": [
+    {
+      "senal": "techo: oraculo",
+      "auc_triaje": 0.9908393694077546,
+      "revisado_para_95": 0.017469109501491265,
+      "error_decil_alto": 0.18376068376068377,
+      "error_decil_bajo": 0.0
+    },
+    {
+      "senal": "baseline: incertidumbre media",
+      "auc_triaje": 0.9587152327067706,
+      "revisado_para_95": 0.14103110353642948,
+      "error_decil_alto": 0.1581196581196581,
+      "error_decil_bajo": 0.0
+    },
+    {
+      "senal": "desacuerdo: fuerza de mayoria",
+      "auc_triaje": 0.9069717898157965,
+      "revisado_para_95": 0.412015338730294,
+      "error_decil_alto": 0.13675213675213677,
+      "error_decil_bajo": 0.008547008547008548
+    },
+    {
+      "senal": "desacuerdo: entropia del voto",
+      "auc_triaje": 0.9069717898157965,
+      "revisado_para_95": 0.412015338730294,
+      "error_decil_alto": 0.13675213675213677,
+      "error_decil_bajo": 0.008547008547008548
+    },
+    {
+      "senal": "desacuerdo: desviacion",
+      "auc_triaje": 0.9053764825952972,
+      "revisado_para_95": 0.22624627183638688,
+      "error_decil_alto": 0.11538461538461539,
+      "error_decil_bajo": 0.0
+    },
+    {
+      "senal": "baseline: azar",
+      "auc_triaje": 0.5145460310539928,
+      "revisado_para_95": 0.9765658287175117,
+      "error_decil_alto": 0.01282051282051282,
+      "error_decil_bajo": 0.02564102564102564
+    }
+  ]
+}

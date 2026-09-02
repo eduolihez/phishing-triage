@@ -1,0 +1,14 @@
+# Los corpus son de terceros y pesan decenas de MB: se descargan con
+# scripts/descargar_corpus.py, no se versionan.
+datos/
+
+# Predicciones intermedias. Los resultados que importan (json y png) SI van
+# al repositorio: son lo que documenta el README.
+resultados/*.npz
+
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.DS_Store

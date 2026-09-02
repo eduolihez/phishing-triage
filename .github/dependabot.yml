@@ -1,0 +1,39 @@
+# ===========================================================================
+#  Dependabot - Triaje de phishing
+#
+#  Las dependencias son scikit-learn, numpy y matplotlib. Importan mas de lo
+#  que parece: una subida de scikit-learn puede cambiar el comportamiento por
+#  defecto de un estimador y mover los numeros del experimento sin que nadie
+#  toque una linea de codigo. Por eso interesa ver llegar la actualizacion
+#  como pull request, con el CI ejecutandose encima.
+# ===========================================================================
+version: 2
+
+updates:
+  # --- GitHub Actions (.github/workflows/) --------------------------------
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    commit-message:
+      prefix: "ci"
+    groups:
+      actions:
+        patterns:
+          - "*"
+
+  # --- pip (requirements.txt + requirements.lock) -------------------------
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    commit-message:
+      prefix: "deps"
+    open-pull-requests-limit: 5
+    groups:
+      dependencias-menores:
+        update-types:
+          - "minor"
+          - "patch"

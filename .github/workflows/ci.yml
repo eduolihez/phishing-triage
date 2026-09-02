@@ -1,0 +1,45 @@
+name: CI
+
+# ===========================================================================
+#  Las pruebas NO descargan los corpus: son de terceros, pesan decenas de MB
+#  y bajarlos en cada ejecucion seria maleducado con servidores academicos
+#  que los ceden gratis. Por eso tests/ trabaja con correos sinteticos y
+#  senales construidas a mano, y cubre justo lo que se rompe de verdad:
+#  el parseo de URLs deliberadamente malformadas y las metricas de triaje.
+# ===========================================================================
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  pruebas:
+    name: Pruebas (Python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Compilar todos los modulos
+        run: python -m compileall -q triaje scripts experimentos tests
+
+      - name: Ejecutar las pruebas
+        run: python -m unittest discover -s tests -v
