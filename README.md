@@ -5,6 +5,8 @@
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-3776AB.svg?logo=python&logoColor=white)](requirements.txt)
 [![Sin GPU](https://img.shields.io/badge/GPU-no%20necesaria-brightgreen.svg)](requirements.txt)
 
+### **[Versión en Español](README.md)** · [English version](README.en.md)
+
 Un analista no puede revisar todo el correo que marca un clasificador. ¿Puede el
 desacuerdo entre varios clasificadores decirle cuál revisar primero?
 
